@@ -11,8 +11,8 @@ jobs:
     - env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO_USER: orihoch
-        IMAGE_PATH: build
-        IMAGE_NAME: k8s-ci-processing-jobs-example-build
+        IMAGE_PATH: builder
+        IMAGE_NAME: k8s-ci-processing-jobs-builder
       run: |
         BUILD_ARGS=""
         if docker pull "ghcr.io/${REPO_USER}/${IMAGE_NAME}:latest"; then
