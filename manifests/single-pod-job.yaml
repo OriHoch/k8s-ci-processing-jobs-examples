@@ -1,0 +1,15 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "builder-$TAG-$OS-$ARCH"
+spec:
+  template:
+    spec:
+      containers:
+      - name: builder
+        image: ghcr.io/orihoch/k8s-ci-processing-jobs-builder
+        args: ["$OS/$ARCH", "$GITHUB_USER", "$TAG"]
+        env:
+          - name: TOKEN
+            value: "$GITHUB_TOKEN"
+      restartPolicy: Never
