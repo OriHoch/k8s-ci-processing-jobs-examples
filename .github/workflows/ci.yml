@@ -11,18 +11,30 @@ jobs:
     - env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO_USER: orihoch
-        IMAGE_PATH: builder
-        IMAGE_NAME: k8s-ci-processing-jobs-builder
+        BUILDER_IMAGE_PATH: builder
+        BUILDER_IMAGE_NAME: k8s-ci-processing-jobs-builder
+        QUEUE_IMAGE_PATH: builder-queue
+        QUEUE_IMAGE_NAME: k8s-ci-processing-jobs-builder-queue
       run: |
         BUILD_ARGS=""
-        if docker pull "ghcr.io/${REPO_USER}/${IMAGE_NAME}:latest"; then
-          BUILD_ARGS="--cache-from ghcr.io/${REPO_USER}/${IMAGE_NAME}:latest"
+        if docker pull "ghcr.io/${REPO_USER}/${BUILDER_IMAGE_NAME}:latest"; then
+          BUILD_ARGS="--cache-from ghcr.io/${REPO_USER}/${BUILDER_IMAGE_NAME}:latest"
         fi
-        docker build -t ${IMAGE_NAME} $BUILD_ARGS $IMAGE_PATH &&\
+        docker build -t ${BUILDER_IMAGE_NAME} $BUILD_ARGS $BUILDER_IMAGE_PATH &&\
+        BUILD_ARGS=""
+        if docker pull "ghcr.io/${REPO_USER}/${QUEUE_IMAGE_NAME}:latest"; then
+          BUILD_ARGS="--cache-from ghcr.io/${REPO_USER}/${QUEUE_IMAGE_NAME}:latest"
+        fi
+        docker tag ${BUILDER_IMAGE_NAME} builder &&\
+        docker build -t ${QUEUE_IMAGE_NAME} $BUILD_ARGS $QUEUE_IMAGE_PATH &&\
         echo "${GITHUB_TOKEN}" | docker login https://ghcr.io -u ${REPO_USER} --password-stdin &&\
-        docker tag ${IMAGE_NAME} "ghcr.io/${REPO_USER}/${IMAGE_NAME}:${GITHUB_SHA}" &&\
-        docker push "ghcr.io/${REPO_USER}/${IMAGE_NAME}:${GITHUB_SHA}" &&\
+        docker tag ${BUILDER_IMAGE_NAME} "ghcr.io/${REPO_USER}/${BUILDER_IMAGE_NAME}:${GITHUB_SHA}" &&\
+        docker push "ghcr.io/${REPO_USER}/${BUILDER_IMAGE_NAME}:${GITHUB_SHA}" &&\
+        docker tag ${QUEUE_IMAGE_NAME} "ghcr.io/${REPO_USER}/${QUEUE_IMAGE_NAME}:${GITHUB_SHA}" &&\
+        docker push "ghcr.io/${REPO_USER}/${QUEUE_IMAGE_NAME}:${GITHUB_SHA}" &&\
         if [ "${GITHUB_REF}" == "refs/heads/main" ]; then
-          docker tag ${IMAGE_NAME} "ghcr.io/${REPO_USER}/${IMAGE_NAME}:latest" &&\
-          docker push "ghcr.io/${REPO_USER}/${IMAGE_NAME}:latest"
+          docker tag ${BUILDER_IMAGE_NAME} "ghcr.io/${REPO_USER}/${BUILDER_IMAGE_NAME}:latest" &&\
+          docker push "ghcr.io/${REPO_USER}/${BUILDER_IMAGE_NAME}:latest" &&\
+          docker tag ${QUEUE_IMAGE_NAME} "ghcr.io/${REPO_USER}/${QUEUE_IMAGE_NAME}:latest" &&\
+          docker push "ghcr.io/${REPO_USER}/${QUEUE_IMAGE_NAME}:latest"
         fi
