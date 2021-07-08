@@ -43,3 +43,50 @@ You can check worker logs for progress:
 docker logs worker1
 docker logs worker2
 ```
+
+## Running using a job queue on Kubernetes
+
+Deploy the Redis server and wait for it to be available:
+
+```
+kubectl apply -f manifests/redis.yaml &&\
+kubectl wait deployment/redis --for condition=available
+```
+
+Start a port-forward to the Redis:
+
+```
+kubectl port-forward deployment/redis 6379
+```
+
+In a new terminal, add all the build jobs to the queue (replace GitHubUserNAme and TagName):
+
+```
+docker run --network host ghcr.io/orihoch/k8s-ci-processing-jobs-builder-queue \
+  --rq-add all GitHubUserName TagName
+```
+
+Set your GitHub token in env var:
+
+```
+export GITHUB_TOKEN=
+```
+
+Deploy the multi-pod job:
+
+```
+cat manifests/multi-pod-job.yaml | envsubst | kubectl apply -f -
+```
+
+Check the pods
+
+```
+kubectl get pods
+```
+
+Check the queue status
+
+```
+docker run --network host ghcr.io/orihoch/k8s-ci-processing-jobs-builder-queue \
+  --rq-info
+```
